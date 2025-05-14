@@ -1,0 +1,23 @@
+[project]
+name = "hybrid-ppo-sb3"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "gymnasium-hybrid",
+    "numpy>=2.0",
+    "opencv-python>=4.11.0.86",
+    "stable-baselines3[extra]>=2.6.0",
+    "tyro>=0.9.20",
+]
+
+[[tool.uv.index]]
+url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
+default = true
+
+[tool.uv.sources]
+gymnasium-hybrid = { git = "https://github.com/Jordan-Haidee/gymnasium_hybrid.git" }
+
+[tool.ruff.lint]
+extend-select = ["I0"]

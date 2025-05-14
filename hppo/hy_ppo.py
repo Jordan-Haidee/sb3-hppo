@@ -4,17 +4,17 @@ from typing import Any, ClassVar, Dict, Optional, Type, TypeVar, Union
 import numpy as np
 import torch as th
 from gymnasium import spaces
+from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, Schedule
+from stable_baselines3.common.utils import explained_variance, get_schedule_fn
 from torch.nn import functional as F
 
+from .hy_on_policy_algo import HyOnPolicyAlgorithm
 from .hy_policies import (
     HyActorCriticCnnPolicy,
     HyActorCriticPolicy,
     HyBasePolicy,
     HyMultiInputActorCriticPolicy,
 )
-from .hy_on_policy_algo import HyOnPolicyAlgorithm
-from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, Schedule
-from stable_baselines3.common.utils import explained_variance, get_schedule_fn
 
 SelfHyPPO = TypeVar("SelfHyPPO", bound="HyPPO")
 

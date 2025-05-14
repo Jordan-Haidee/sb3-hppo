@@ -1,4 +1,5 @@
 import collections
+import copy
 import warnings
 from abc import ABC, abstractmethod
 from functools import partial
@@ -7,15 +8,12 @@ from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 import numpy as np
 import torch as th
 from gymnasium import spaces
-from torch import nn
 from stable_baselines3.common.distributions import (
-    Distribution,
     DiagGaussianDistribution,
+    Distribution,
     StateDependentNoiseDistribution,
     make_proba_distribution,
 )
-from stable_baselines3.common.type_aliases import Schedule
-import copy
 from stable_baselines3.common.preprocessing import (
     is_image_space,
     maybe_transpose,
@@ -27,11 +25,14 @@ from stable_baselines3.common.torch_layers import (
     FlattenExtractor,
     NatureCNN,
 )
+from stable_baselines3.common.type_aliases import Schedule
 from stable_baselines3.common.utils import (
     get_device,
     is_vectorized_observation,
     obs_as_tensor,
 )
+from torch import nn
+
 from .hyper_layer import HyMlpExtractor
 
 SelfHyBaseModel = TypeVar("SelfHyBaseModel", bound="HyBaseModel")
@@ -338,9 +339,11 @@ class HyBasePolicy(HyBaseModel, ABC):
         )
         # Remove batch dimension if needed
         if not vectorized_env:
-            actions_disc = actions_disc.squeeze(axis=0)
+            # actions_disc = actions_disc.squeeze(axis=0)
             actions_con = actions_con.squeeze(axis=0)
-        actions = np.concatenate([actions_disc[:, None], actions_con], axis=-1)
+            actions = np.concatenate([actions_disc, actions_con], axis=-1)
+        else:
+            actions = np.concatenate([actions_disc[:, None], actions_con], axis=-1)
         return actions, state
 
     def scale_action(self, action: np.ndarray) -> np.ndarray:

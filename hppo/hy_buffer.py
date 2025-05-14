@@ -1,12 +1,12 @@
+from typing import Generator, NamedTuple, Optional, Union
+
 import numpy as np
 import torch as th
 from gymnasium import spaces
-
+from stable_baselines3.common.buffers import BaseBuffer
 from stable_baselines3.common.preprocessing import get_obs_shape
 from stable_baselines3.common.utils import get_device
 from stable_baselines3.common.vec_env import VecNormalize
-from typing import NamedTuple, Optional, Union, Generator
-from stable_baselines3.common.buffers import BaseBuffer
 
 
 def get_action_dim(action_space: spaces.Space) -> int:

@@ -22,8 +22,8 @@ from typing import (
 import numpy as np
 import torch as th
 from gymnasium import spaces
-
 from stable_baselines3.common import utils
+from stable_baselines3.common.base_class import maybe_make_env
 from stable_baselines3.common.callbacks import (
     BaseCallback,
     CallbackList,
@@ -69,7 +69,6 @@ from stable_baselines3.common.vec_env import (
     unwrap_vec_normalize,
 )
 from stable_baselines3.common.vec_env.patch_gym import _convert_space, _patch_env
-from stable_baselines3.common.base_class import maybe_make_env
 
 SelfHyBaseAlgorithm = TypeVar("SelfHyBaseAlgorithm", bound="HyBaseAlgorithm")
 

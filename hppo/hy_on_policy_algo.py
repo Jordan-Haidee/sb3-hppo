@@ -1,6 +1,7 @@
 import sys
 import time
 from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
+
 import numpy as np
 import torch as th
 from gymnasium import spaces
@@ -8,9 +9,10 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, Schedule
 from stable_baselines3.common.utils import obs_as_tensor, safe_mean
 from stable_baselines3.common.vec_env import VecEnv
-from .hy_policies import HyActorCriticPolicy
-from .hy_buffer import HYRolloutBuffer
+
 from .hy_base_class import HyBaseAlgorithm
+from .hy_buffer import HYRolloutBuffer
+from .hy_policies import HyActorCriticPolicy
 
 SelfHyOnPolicyAlgorithm = TypeVar(
     "SelfHyOnPolicyAlgorithm", bound="HyOnPolicyAlgorithm"

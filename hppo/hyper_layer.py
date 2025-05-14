@@ -1,7 +1,8 @@
-from typing import Dict, List, Type, Union, Tuple
+from typing import Dict, List, Tuple, Type, Union
+
 import torch as th
-from torch import nn
 from stable_baselines3.common.utils import get_device
+from torch import nn
 
 
 class HyMlpExtractor(nn.Module):
