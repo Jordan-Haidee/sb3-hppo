@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 import gymnasium as gym
 import tyro
@@ -10,7 +11,7 @@ from wrapper import SB3HyPPOWrapper
 @dataclass
 class Args:
     env: str
-    ckpt: str
+    ckpt: Path
     render: bool = False
 
 
