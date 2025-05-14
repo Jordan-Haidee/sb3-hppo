@@ -1,4 +1,4 @@
-# SB3HPPO
+# SB3-HPPO
 
 > **Hybrid PPO** implementation using stable-baselines3 and benchmarked in the Gymnasium-Hybrid standard environment.
 
