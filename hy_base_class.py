@@ -6,23 +6,52 @@ import time
 import warnings
 from abc import ABC, abstractmethod
 from collections import deque
-from typing import Any, ClassVar, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
-import gymnasium as gym
 import numpy as np
 import torch as th
 from gymnasium import spaces
 
 from stable_baselines3.common import utils
-from stable_baselines3.common.callbacks import BaseCallback, CallbackList, ConvertCallback, ProgressBarCallback
+from stable_baselines3.common.callbacks import (
+    BaseCallback,
+    CallbackList,
+    ConvertCallback,
+    ProgressBarCallback,
+)
 from stable_baselines3.common.env_util import is_wrapped
 from stable_baselines3.common.logger import Logger
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.noise import ActionNoise
 from stable_baselines3.common.policies import BasePolicy
-from stable_baselines3.common.preprocessing import check_for_nested_spaces, is_image_space, is_image_space_channels_first
-from stable_baselines3.common.save_util import load_from_zip_file, recursive_getattr, recursive_setattr, save_to_zip_file
-from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, Schedule, TensorDict
+from stable_baselines3.common.preprocessing import (
+    check_for_nested_spaces,
+    is_image_space,
+    is_image_space_channels_first,
+)
+from stable_baselines3.common.save_util import (
+    load_from_zip_file,
+    recursive_getattr,
+    recursive_setattr,
+    save_to_zip_file,
+)
+from stable_baselines3.common.type_aliases import (
+    GymEnv,
+    MaybeCallback,
+    Schedule,
+    TensorDict,
+)
 from stable_baselines3.common.utils import (
     check_for_correct_spaces,
     get_device,
@@ -43,6 +72,8 @@ from stable_baselines3.common.vec_env.patch_gym import _convert_space, _patch_en
 from stable_baselines3.common.base_class import maybe_make_env
 
 SelfHyBaseAlgorithm = TypeVar("SelfHyBaseAlgorithm", bound="HyBaseAlgorithm")
+
+
 class HyBaseAlgorithm(ABC):
     policy_aliases: ClassVar[Dict[str, Type[BasePolicy]]] = {}
     policy: BasePolicy
@@ -121,8 +152,8 @@ class HyBaseAlgorithm(ABC):
             self.action_space = env.action_space
             self.n_envs = env.num_envs
             self.env = env
-            self.action_space_con = self.action_space['continuous_action']
-            self.action_space_disc = self.action_space['discrete_action']
+            self.action_space_con = self.action_space["continuous_action"]
+            self.action_space_disc = self.action_space["discrete_action"]
 
             # get VecNormalize object if needed
             self._vec_normalize_env = unwrap_vec_normalize(env)
@@ -135,23 +166,36 @@ class HyBaseAlgorithm(ABC):
 
             if not support_multi_env and self.n_envs > 1:
                 raise ValueError(
-                    "Error: the model does not support multiple envs; it requires " "a single vectorized environment."
+                    "Error: the model does not support multiple envs; it requires "
+                    "a single vectorized environment."
                 )
 
             # Catch common mistake: using MlpPolicy/CnnPolicy instead of MultiInputPolicy
-            if policy in ["MlpPolicy", "CnnPolicy"] and isinstance(self.observation_space, spaces.Dict):
-                raise ValueError(f"You must use `MultiInputPolicy` when working with dict observation space, not {policy}")
+            if policy in ["MlpPolicy", "CnnPolicy"] and isinstance(
+                self.observation_space, spaces.Dict
+            ):
+                raise ValueError(
+                    f"You must use `MultiInputPolicy` when working with dict observation space, not {policy}"
+                )
 
             if self.use_sde and not isinstance(self.action_space_con, spaces.Box):
-                raise ValueError("generalized State-Dependent Exploration (gSDE) can only be used with continuous actions.")
+                raise ValueError(
+                    "generalized State-Dependent Exploration (gSDE) can only be used with continuous actions."
+                )
 
             if isinstance(self.action_space_con, spaces.Box):
                 assert np.all(
-                    np.isfinite(np.array([self.action_space_con.low, self.action_space_con.high]))
+                    np.isfinite(
+                        np.array(
+                            [self.action_space_con.low, self.action_space_con.high]
+                        )
+                    )
                 ), "Continuous action space must have a finite lower and upper bound"
 
     @staticmethod
-    def _wrap_env(env: GymEnv, verbose: int = 0, monitor_wrapper: bool = True) -> VecEnv:
+    def _wrap_env(
+        env: GymEnv, verbose: int = 0, monitor_wrapper: bool = True
+    ) -> VecEnv:
         if not isinstance(env, VecEnv):
             # Patch to support gym 0.21/0.26 and gymnasium
             env = _patch_env(env)
@@ -170,10 +214,13 @@ class HyBaseAlgorithm(ABC):
             if isinstance(env.observation_space, spaces.Dict):
                 for space in env.observation_space.spaces.values():
                     wrap_with_vectranspose = wrap_with_vectranspose or (
-                        is_image_space(space) and not is_image_space_channels_first(space)  # type: ignore[arg-type]
+                        is_image_space(space)
+                        and not is_image_space_channels_first(space)  # type: ignore[arg-type]
                     )
             else:
-                wrap_with_vectranspose = is_image_space(env.observation_space) and not is_image_space_channels_first(
+                wrap_with_vectranspose = is_image_space(
+                    env.observation_space
+                ) and not is_image_space_channels_first(
                     env.observation_space  # type: ignore[arg-type]
                 )
 
@@ -202,17 +249,26 @@ class HyBaseAlgorithm(ABC):
         """Transform to callable if needed."""
         self.lr_schedule = get_schedule_fn(self.learning_rate)
 
-    def _update_current_progress_remaining(self, num_timesteps: int, total_timesteps: int) -> None:
- 
-        self._current_progress_remaining = 1.0 - float(num_timesteps) / float(total_timesteps)
+    def _update_current_progress_remaining(
+        self, num_timesteps: int, total_timesteps: int
+    ) -> None:
+        self._current_progress_remaining = 1.0 - float(num_timesteps) / float(
+            total_timesteps
+        )
 
-    def _update_learning_rate(self, optimizers: Union[List[th.optim.Optimizer], th.optim.Optimizer]) -> None:
-        self.logger.record("train/learning_rate", self.lr_schedule(self._current_progress_remaining))
+    def _update_learning_rate(
+        self, optimizers: Union[List[th.optim.Optimizer], th.optim.Optimizer]
+    ) -> None:
+        self.logger.record(
+            "train/learning_rate", self.lr_schedule(self._current_progress_remaining)
+        )
 
         if not isinstance(optimizers, list):
             optimizers = [optimizers]
         for optimizer in optimizers:
-            update_learning_rate(optimizer, self.lr_schedule(self._current_progress_remaining))
+            update_learning_rate(
+                optimizer, self.lr_schedule(self._current_progress_remaining)
+            )
 
     def _excluded_save_params(self) -> List[str]:
         return [
@@ -289,13 +345,17 @@ class HyBaseAlgorithm(ABC):
                 self._last_original_obs = self._vec_normalize_env.get_original_obs()
 
         if not self._custom_logger:
-            self._logger = utils.configure_logger(self.verbose, self.tensorboard_log, tb_log_name, reset_num_timesteps)
+            self._logger = utils.configure_logger(
+                self.verbose, self.tensorboard_log, tb_log_name, reset_num_timesteps
+            )
 
         callback = self._init_callback(callback, progress_bar)
 
         return total_timesteps, callback
 
-    def _update_info_buffer(self, infos: List[Dict[str, Any]], dones: Optional[np.ndarray] = None) -> None:
+    def _update_info_buffer(
+        self, infos: List[Dict[str, Any]], dones: Optional[np.ndarray] = None
+    ) -> None:
         assert self.ep_info_buffer is not None
         assert self.ep_success_buffer is not None
 
@@ -340,8 +400,7 @@ class HyBaseAlgorithm(ABC):
         reset_num_timesteps: bool = True,
         progress_bar: bool = False,
     ) -> SelfHyBaseAlgorithm:
-        """
-        """
+        """ """
 
     def predict(
         self,
@@ -350,13 +409,11 @@ class HyBaseAlgorithm(ABC):
         episode_start: Optional[np.ndarray] = None,
         deterministic: bool = False,
     ) -> Tuple[np.ndarray, Optional[Tuple[np.ndarray, ...]]]:
-        """
-        """
+        """ """
         return self.policy.predict(observation, state, episode_start, deterministic)
 
     def set_random_seed(self, seed: Optional[int] = None) -> None:
-        """
-        """
+        """ """
         if seed is None:
             return
         set_random_seed(seed, using_cuda=self.device.type == th.device("cuda").type)
@@ -370,8 +427,7 @@ class HyBaseAlgorithm(ABC):
         exact_match: bool = True,
         device: Union[th.device, str] = "auto",
     ) -> None:
-        """
-        """
+        """ """
         params = {}
         if isinstance(load_path_or_dict, dict):
             params = load_path_or_dict
@@ -431,30 +487,44 @@ class HyBaseAlgorithm(ABC):
             if "device" in data["policy_kwargs"]:
                 del data["policy_kwargs"]["device"]
             # backward compatibility, convert to new format
-            if "net_arch" in data["policy_kwargs"] and len(data["policy_kwargs"]["net_arch"]) > 0:
+            if (
+                "net_arch" in data["policy_kwargs"]
+                and len(data["policy_kwargs"]["net_arch"]) > 0
+            ):
                 saved_net_arch = data["policy_kwargs"]["net_arch"]
-                if isinstance(saved_net_arch, list) and isinstance(saved_net_arch[0], dict):
+                if isinstance(saved_net_arch, list) and isinstance(
+                    saved_net_arch[0], dict
+                ):
                     data["policy_kwargs"]["net_arch"] = saved_net_arch[0]
 
-        if "policy_kwargs" in kwargs and kwargs["policy_kwargs"] != data["policy_kwargs"]:
+        if (
+            "policy_kwargs" in kwargs
+            and kwargs["policy_kwargs"] != data["policy_kwargs"]
+        ):
             raise ValueError(
                 f"The specified policy kwargs do not equal the stored policy kwargs."
                 f"Stored kwargs: {data['policy_kwargs']}, specified kwargs: {kwargs['policy_kwargs']}"
             )
 
         if "observation_space" not in data or "action_space" not in data:
-            raise KeyError("The observation_space and action_space were not given, can't verify new environments")
+            raise KeyError(
+                "The observation_space and action_space were not given, can't verify new environments"
+            )
 
         # Gym -> Gymnasium space conversion
-        
+
         for key in {"observation_space", "action_space"}:
-            data[key] = _convert_space(data[key])  # pytype: disable=unsupported-operands
+            data[key] = _convert_space(
+                data[key]
+            )  # pytype: disable=unsupported-operands
 
         if env is not None:
             # Wrap first if needed
             env = cls._wrap_env(env, data["verbose"])
             # Check if given env is valid
-            check_for_correct_spaces(env, data["observation_space"], data["action_space"])
+            check_for_correct_spaces(
+                env, data["observation_space"], data["action_space"]
+            )
             # Discard `_last_obs`, this will force the env to reset before training
             # See issue https://github.com/DLR-RM/stable-baselines3/issues/597
             if force_reset and data is not None:
@@ -488,7 +558,9 @@ class HyBaseAlgorithm(ABC):
             # Patch to load Policy saved using SB3 < 1.7.0
             # the error is probably due to old policy being loaded
             # See https://github.com/DLR-RM/stable-baselines3/issues/1233
-            if "pi_features_extractor" in str(e) and "Missing key(s) in state_dict" in str(e):
+            if "pi_features_extractor" in str(
+                e
+            ) and "Missing key(s) in state_dict" in str(e):
                 model.set_parameters(params, exact_match=False, device=device)
                 warnings.warn(
                     "You are probably loading a model saved with SB3 < 1.7.0, "
@@ -569,4 +641,6 @@ class HyBaseAlgorithm(ABC):
         # Build dict of state_dicts
         params_to_save = self.get_parameters()
 
-        save_to_zip_file(path, data=data, params=params_to_save, pytorch_variables=pytorch_variables)
+        save_to_zip_file(
+            path, data=data, params=params_to_save, pytorch_variables=pytorch_variables
+        )

@@ -6,12 +6,18 @@ import torch as th
 from gymnasium import spaces
 from torch.nn import functional as F
 
-from drl_utils.algorithms.hppo.hy_policies import HyActorCriticCnnPolicy, HyActorCriticPolicy, HyBasePolicy, HyMultiInputActorCriticPolicy
-from drl_utils.algorithms.hppo.hy_on_policy_algo import HyOnPolicyAlgorithm
+from .hy_policies import (
+    HyActorCriticCnnPolicy,
+    HyActorCriticPolicy,
+    HyBasePolicy,
+    HyMultiInputActorCriticPolicy,
+)
+from .hy_on_policy_algo import HyOnPolicyAlgorithm
 from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, Schedule
 from stable_baselines3.common.utils import explained_variance, get_schedule_fn
 
 SelfHyPPO = TypeVar("SelfHyPPO", bound="HyPPO")
+
 
 class HyPPO(HyOnPolicyAlgorithm):
     policy_aliases: ClassVar[Dict[str, Type[HyBasePolicy]]] = {
@@ -19,6 +25,7 @@ class HyPPO(HyOnPolicyAlgorithm):
         "CnnPolicy": HyActorCriticCnnPolicy,
         "MultiInputPolicy": HyMultiInputActorCriticPolicy,
     }
+
     def __init__(
         self,
         policy: Union[str, Type[HyActorCriticPolicy]],
@@ -67,25 +74,23 @@ class HyPPO(HyOnPolicyAlgorithm):
             device=device,
             seed=seed,
             _init_setup_model=False,
-            supported_action_spaces=(
-                spaces.Dict
-            ),
+            supported_action_spaces=(spaces.Dict),
         )
 
         # Sanity check, otherwise it will lead to noisy gradient and NaN
         # because of the advantage normalization
         if normalize_advantage:
-            assert (
-                batch_size > 1
-            ), "`batch_size` must be greater than 1. See https://github.com/DLR-RM/stable-baselines3/issues/440"
+            assert batch_size > 1, (
+                "`batch_size` must be greater than 1. See https://github.com/DLR-RM/stable-baselines3/issues/440"
+            )
 
         if self.env is not None:
             # Check that `n_steps * n_envs > 1` to avoid NaN
             # when doing advantage normalization
             buffer_size = self.env.num_envs * self.n_steps
-            assert buffer_size > 1 or (
-                not normalize_advantage
-            ), f"`n_steps * n_envs` must be greater than 1. Currently n_steps={self.n_steps} and n_envs={self.env.num_envs}"
+            assert buffer_size > 1 or (not normalize_advantage), (
+                f"`n_steps * n_envs` must be greater than 1. Currently n_steps={self.n_steps} and n_envs={self.env.num_envs}"
+            )
             # Check that the rollout buffer size is a multiple of the mini-batch size
             untruncated_batches = buffer_size // batch_size
             if buffer_size % batch_size > 0:
@@ -114,7 +119,10 @@ class HyPPO(HyOnPolicyAlgorithm):
         self.clip_range = get_schedule_fn(self.clip_range)
         if self.clip_range_vf is not None:
             if isinstance(self.clip_range_vf, (float, int)):
-                assert self.clip_range_vf > 0, "`clip_range_vf` must be positive, " "pass `None` to deactivate vf clipping"
+                assert self.clip_range_vf > 0, (
+                    "`clip_range_vf` must be positive, "
+                    "pass `None` to deactivate vf clipping"
+                )
 
             self.clip_range_vf = get_schedule_fn(self.clip_range_vf)
 
@@ -152,13 +160,19 @@ class HyPPO(HyOnPolicyAlgorithm):
                 if self.use_sde:
                     self.policy.reset_noise(self.batch_size)
 
-                values, log_prob_disc, log_prob_con, entropy_disc, entropy_con = self.policy.evaluate_actions(rollout_data.observations, actions_disc, actions_con)
+                values, log_prob_disc, log_prob_con, entropy_disc, entropy_con = (
+                    self.policy.evaluate_actions(
+                        rollout_data.observations, actions_disc, actions_con
+                    )
+                )
                 values = values.flatten()
                 # Normalize advantage
                 advantages = rollout_data.advantages
                 # Normalization does not make sense if mini batchsize == 1, see GH issue #325
                 if self.normalize_advantage and len(advantages) > 1:
-                    advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+                    advantages = (advantages - advantages.mean()) / (
+                        advantages.std() + 1e-8
+                    )
 
                 # ratio between old and new policy, should be one at the first iteration
                 ratio_disc = th.exp(log_prob_disc - rollout_data.old_log_probs_disc)
@@ -166,21 +180,31 @@ class HyPPO(HyOnPolicyAlgorithm):
 
                 # clipped surrogate loss
                 policy_loss_1_disc = advantages * ratio_disc
-                policy_loss_2_disc = advantages * th.clamp(ratio_disc, 1 - clip_range, 1 + clip_range)
-                policy_loss_disc = -th.min(policy_loss_1_disc, policy_loss_2_disc).mean()
+                policy_loss_2_disc = advantages * th.clamp(
+                    ratio_disc, 1 - clip_range, 1 + clip_range
+                )
+                policy_loss_disc = -th.min(
+                    policy_loss_1_disc, policy_loss_2_disc
+                ).mean()
 
                 policy_loss_1_con = advantages * ratio_con
-                policy_loss_2_con = advantages * th.clamp(ratio_con, 1 - clip_range, 1 + clip_range)
+                policy_loss_2_con = advantages * th.clamp(
+                    ratio_con, 1 - clip_range, 1 + clip_range
+                )
                 policy_loss_con = -th.min(policy_loss_1_con, policy_loss_2_con).mean()
 
                 # Logging
                 pg_losses_disc.append(policy_loss_disc.item())
-                clip_fraction_disc = th.mean((th.abs(ratio_disc - 1) > clip_range).float()).item()
+                clip_fraction_disc = th.mean(
+                    (th.abs(ratio_disc - 1) > clip_range).float()
+                ).item()
                 clip_fractions_disc.append(clip_fraction_disc)
 
                 # Logging
                 pg_losses_con.append(policy_loss_con.item())
-                clip_fraction_con = th.mean((th.abs(ratio_con - 1) > clip_range).float()).item()
+                clip_fraction_con = th.mean(
+                    (th.abs(ratio_con - 1) > clip_range).float()
+                ).item()
                 clip_fractions_con.append(clip_fraction_con)
 
                 if self.clip_range_vf is None:
@@ -202,44 +226,57 @@ class HyPPO(HyOnPolicyAlgorithm):
                     entropy_loss_disc = -th.mean(-log_prob_disc)
                 else:
                     entropy_loss_disc = -th.mean(entropy_disc)
-                    
+
                 if entropy_con is None:
                     # Approximate entropy when no analytical form
                     entropy_loss_con = -th.mean(-log_prob_con)
                 else:
                     entropy_loss_con = -th.mean(entropy_con)
 
-
                 entropy_losses_disc.append(entropy_loss_disc.item())
                 entropy_losses_con.append(entropy_loss_con.item())
 
                 # loss = policy_loss + self.ent_coef * entropy_loss + self.vf_coef * value_loss
-                loss_disc = policy_loss_disc + self.ent_coef_disc * entropy_loss_disc 
+                loss_disc = policy_loss_disc + self.ent_coef_disc * entropy_loss_disc
                 self.policy.disc_optimizer.zero_grad()
                 loss_disc.backward()
-                th.nn.utils.clip_grad_norm_(self.policy.disc_parameters, self.max_grad_norm)
+                th.nn.utils.clip_grad_norm_(
+                    self.policy.disc_parameters, self.max_grad_norm
+                )
                 self.policy.disc_optimizer.step()
                 loss_con = policy_loss_con + self.ent_coef_con * entropy_loss_con
                 self.policy.con_optimizer.zero_grad()
                 loss_con.backward()
-                th.nn.utils.clip_grad_norm_(self.policy.con_parameters, self.max_grad_norm)
+                th.nn.utils.clip_grad_norm_(
+                    self.policy.con_parameters, self.max_grad_norm
+                )
                 self.policy.con_optimizer.step()
-                    
-                loss_value = self.vf_coef * value_loss 
+
+                loss_value = self.vf_coef * value_loss
                 self.policy.value_optimizer.zero_grad()
                 loss_value.backward()
-                th.nn.utils.clip_grad_norm_(self.policy.value_parameters, self.max_grad_norm)
+                th.nn.utils.clip_grad_norm_(
+                    self.policy.value_parameters, self.max_grad_norm
+                )
                 self.policy.value_optimizer.step()
-                
+
                 with th.no_grad():
                     log_ratio_disc = log_prob_disc - rollout_data.old_log_probs_disc
-                    approx_kl_div = th.mean((th.exp(log_ratio_disc) - 1) - log_ratio_disc).cpu().numpy()
+                    approx_kl_div = (
+                        th.mean((th.exp(log_ratio_disc) - 1) - log_ratio_disc)
+                        .cpu()
+                        .numpy()
+                    )
                     approx_kl_divs_disc.append(approx_kl_div)
 
                     log_ratio_con = log_prob_disc - rollout_data.old_log_probs_disc
-                    approx_kl_div_con = th.mean((th.exp(log_ratio_con) - 1) - log_ratio_con).cpu().numpy()
+                    approx_kl_div_con = (
+                        th.mean((th.exp(log_ratio_con) - 1) - log_ratio_con)
+                        .cpu()
+                        .numpy()
+                    )
                     approx_kl_divs_con.append(approx_kl_div_con)
-                    
+
                 # self.policy.optimizer.zero_grad()
                 # loss.backward()
                 # # Clip grad norm
@@ -250,7 +287,9 @@ class HyPPO(HyOnPolicyAlgorithm):
             if not continue_training:
                 break
 
-        explained_var = explained_variance(self.rollout_buffer.values.flatten(), self.rollout_buffer.returns.flatten())
+        explained_var = explained_variance(
+            self.rollout_buffer.values.flatten(), self.rollout_buffer.returns.flatten()
+        )
 
         # Logs
         self.logger.record("train/entropy_loss_disc", np.mean(entropy_losses_disc))

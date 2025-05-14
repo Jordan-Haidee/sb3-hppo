@@ -5,7 +5,6 @@ from stable_baselines3.common.utils import get_device
 
 
 class HyMlpExtractor(nn.Module):
-
     def __init__(
         self,
         feature_dim: int,
@@ -24,7 +23,7 @@ class HyMlpExtractor(nn.Module):
         if isinstance(net_arch, dict):
             pi_layers_dims = net_arch.get("pi", [])  # Layer sizes of the policy network
             vf_layers_dims = net_arch.get("vf", [])  # Layer sizes of the value network
-            
+
         else:
             pi_layers_dims = vf_layers_dims = net_arch
         for curr_layer_dim in pi_layers_dims:
@@ -40,13 +39,17 @@ class HyMlpExtractor(nn.Module):
 
         self.latent_dim_pi = last_layer_dim_pi
         self.latent_dim_vf = last_layer_dim_vf
-        
+
         self.policy_net_con = nn.Sequential(*policy_net_con).to(device)
         self.policy_net_disc = nn.Sequential(*policy_net_disc).to(device)
         self.value_net = nn.Sequential(*value_net).to(device)
 
     def forward(self, features: th.Tensor) -> Tuple[th.Tensor, th.Tensor]:
-        return self.forward_actor_disc(features), self.forward_actor_con(features), self.forward_critic(features)
+        return (
+            self.forward_actor_disc(features),
+            self.forward_actor_con(features),
+            self.forward_critic(features),
+        )
 
     def forward_actor_disc(self, features: th.Tensor) -> th.Tensor:
         return self.policy_net_disc(features)

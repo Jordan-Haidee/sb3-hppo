@@ -5,7 +5,7 @@ from gymnasium import spaces
 from stable_baselines3.common.preprocessing import get_obs_shape
 from stable_baselines3.common.utils import get_device
 from stable_baselines3.common.vec_env import VecNormalize
-from typing import NamedTuple, Optional, Union,Generator, Union
+from typing import NamedTuple, Optional, Union, Generator
 from stable_baselines3.common.buffers import BaseBuffer
 
 
@@ -20,12 +20,12 @@ def get_action_dim(action_space: spaces.Space) -> int:
         return int(len(action_space.nvec))
     elif isinstance(action_space, spaces.MultiBinary):
         # Number of binary actions
-        assert isinstance(
-            action_space.n, int
-        ), "Multi-dimensional MultiBinary action space is not supported. You can flatten it instead."
+        assert isinstance(action_space.n, int), (
+            "Multi-dimensional MultiBinary action space is not supported. You can flatten it instead."
+        )
         return int(action_space.n)
     elif isinstance(action_space, spaces.Dict):
-        return int(np.prod(action_space['continuous_action'].shape)), 1
+        return int(np.prod(action_space["continuous_action"].shape)), 1
     else:
         raise NotImplementedError(f"{action_space} action space is not supported")
 
@@ -39,6 +39,7 @@ class HYRolloutBufferSamples(NamedTuple):
     old_log_probs_disc: th.Tensor
     advantages: th.Tensor
     returns: th.Tensor
+
 
 class HYRolloutBuffer(BaseBuffer):
     observations: np.ndarray
@@ -76,23 +77,34 @@ class HYRolloutBuffer(BaseBuffer):
         self.generator_ready = False
         self.reset()
 
-
     def reset(self) -> None:
-        self.observations = np.zeros((self.buffer_size, self.n_envs, *self.obs_shape), dtype=np.float32)
-        self.actions_disc = np.zeros((self.buffer_size, self.n_envs, self.action_disc_dim), dtype=np.float32)
-        self.actions_con = np.zeros((self.buffer_size, self.n_envs, self.action_con_dim), dtype=np.float32)
+        self.observations = np.zeros(
+            (self.buffer_size, self.n_envs, *self.obs_shape), dtype=np.float32
+        )
+        self.actions_disc = np.zeros(
+            (self.buffer_size, self.n_envs, self.action_disc_dim), dtype=np.float32
+        )
+        self.actions_con = np.zeros(
+            (self.buffer_size, self.n_envs, self.action_con_dim), dtype=np.float32
+        )
         self.rewards = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.returns = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
-        self.episode_starts = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.episode_starts = np.zeros(
+            (self.buffer_size, self.n_envs), dtype=np.float32
+        )
         self.values = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
-        self.log_probs_disc = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.log_probs_disc = np.zeros(
+            (self.buffer_size, self.n_envs), dtype=np.float32
+        )
         self.log_probs_con = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.advantages = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.generator_ready = False
         self.pos = 0
         self.full = False
-        
-    def compute_returns_and_advantage(self, last_values: th.Tensor, dones: np.ndarray) -> None:
+
+    def compute_returns_and_advantage(
+        self, last_values: th.Tensor, dones: np.ndarray
+    ) -> None:
         last_values = last_values.clone().cpu().numpy().flatten()
 
         last_gae_lam = 0
@@ -103,8 +115,14 @@ class HYRolloutBuffer(BaseBuffer):
             else:
                 next_non_terminal = 1.0 - self.episode_starts[step + 1]
                 next_values = self.values[step + 1]
-            delta = self.rewards[step] + self.gamma * next_values * next_non_terminal - self.values[step]
-            last_gae_lam = delta + self.gamma * self.gae_lambda * next_non_terminal * last_gae_lam
+            delta = (
+                self.rewards[step]
+                + self.gamma * next_values * next_non_terminal
+                - self.values[step]
+            )
+            last_gae_lam = (
+                delta + self.gamma * self.gae_lambda * next_non_terminal * last_gae_lam
+            )
             self.advantages[step] = last_gae_lam
         self.returns = self.advantages + self.values
 
@@ -118,7 +136,7 @@ class HYRolloutBuffer(BaseBuffer):
         value: th.Tensor,
         log_probs_disc: th.Tensor,
         log_probs_con: th.Tensor,
-        ):
+    ):
         self.observations[self.pos] = np.array(obs).copy()
         self.actions_disc[self.pos] = np.array(action_disc).copy()
         self.actions_con[self.pos] = np.array(action_con).copy()
@@ -132,10 +150,12 @@ class HYRolloutBuffer(BaseBuffer):
             self.full = True
 
     def filter(self):
-        obs = self.observations[:self.pos]
+        obs = self.observations[: self.pos]
         return np.mean(obs), np.std(obs)
 
-    def get(self, batch_size: Optional[int] = None) -> Generator[HYRolloutBufferSamples, None, None]:
+    def get(
+        self, batch_size: Optional[int] = None
+    ) -> Generator[HYRolloutBufferSamples, None, None]:
         assert self.full, ""
         indices = np.random.permutation(self.buffer_size * self.n_envs)
         # Prepare the data

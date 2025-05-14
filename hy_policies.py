@@ -16,15 +16,23 @@ from stable_baselines3.common.distributions import (
 )
 from stable_baselines3.common.type_aliases import Schedule
 import copy
-from stable_baselines3.common.preprocessing import is_image_space, maybe_transpose, preprocess_obs
+from stable_baselines3.common.preprocessing import (
+    is_image_space,
+    maybe_transpose,
+    preprocess_obs,
+)
 from stable_baselines3.common.torch_layers import (
     BaseFeaturesExtractor,
     CombinedExtractor,
     FlattenExtractor,
     NatureCNN,
 )
-from stable_baselines3.common.utils import get_device, is_vectorized_observation, obs_as_tensor
-from drl_utils.algorithms.hppo.hyper_layer import HyMlpExtractor
+from stable_baselines3.common.utils import (
+    get_device,
+    is_vectorized_observation,
+    obs_as_tensor,
+)
+from .hyper_layer import HyMlpExtractor
 
 SelfHyBaseModel = TypeVar("SelfHyBaseModel", bound="HyBaseModel")
 
@@ -64,7 +72,9 @@ class HyBaseModel(nn.Module):
         self.features_extractor_class = features_extractor_class
         self.features_extractor_kwargs = features_extractor_kwargs
         # Automatically deactivate dtype and bounds checks
-        if normalize_images is False and issubclass(features_extractor_class, (NatureCNN, CombinedExtractor)):
+        if normalize_images is False and issubclass(
+            features_extractor_class, (NatureCNN, CombinedExtractor)
+        ):
             self.features_extractor_kwargs.update(dict(normalized_image=True))
 
     def _update_features_extractor(
@@ -86,14 +96,23 @@ class HyBaseModel(nn.Module):
         if features_extractor is None:
             # The features extractor is not shared, create a new one
             features_extractor = self.make_features_extractor()
-        net_kwargs.update(dict(features_extractor=features_extractor, features_dim=features_extractor.features_dim))
+        net_kwargs.update(
+            dict(
+                features_extractor=features_extractor,
+                features_dim=features_extractor.features_dim,
+            )
+        )
         return net_kwargs
 
     def make_features_extractor(self) -> BaseFeaturesExtractor:
         """Helper method to create a features extractor."""
-        return self.features_extractor_class(self.observation_space, **self.features_extractor_kwargs)
+        return self.features_extractor_class(
+            self.observation_space, **self.features_extractor_kwargs
+        )
 
-    def extract_features(self, obs: th.Tensor, features_extractor: BaseFeaturesExtractor) -> th.Tensor:
+    def extract_features(
+        self, obs: th.Tensor, features_extractor: BaseFeaturesExtractor
+    ) -> th.Tensor:
         """
         Preprocess the observation if needed and extract features.
 
@@ -101,7 +120,9 @@ class HyBaseModel(nn.Module):
          :param features_extractor: The features extractor to use.
          :return: The extracted features
         """
-        preprocessed_obs = preprocess_obs(obs, self.observation_space, normalize_images=self.normalize_images)
+        preprocessed_obs = preprocess_obs(
+            obs, self.observation_space, normalize_images=self.normalize_images
+        )
         return features_extractor(preprocessed_obs)
 
     def _get_constructor_parameters(self) -> Dict[str, Any]:
@@ -135,10 +156,18 @@ class HyBaseModel(nn.Module):
 
         :param path:
         """
-        th.save({"state_dict": self.state_dict(), "data": self._get_constructor_parameters()}, path)
+        th.save(
+            {
+                "state_dict": self.state_dict(),
+                "data": self._get_constructor_parameters(),
+            },
+            path,
+        )
 
     @classmethod
-    def load(cls: Type[SelfHyBaseModel], path: str, device: Union[th.device, str] = "auto") -> SelfHyBaseModel:
+    def load(
+        cls: Type[SelfHyBaseModel], path: str, device: Union[th.device, str] = "auto"
+    ) -> SelfHyBaseModel:
         """
         Load model from path.
 
@@ -162,7 +191,9 @@ class HyBaseModel(nn.Module):
 
         :param vector:
         """
-        th.nn.utils.vector_to_parameters(th.as_tensor(vector, dtype=th.float, device=self.device), self.parameters())
+        th.nn.utils.vector_to_parameters(
+            th.as_tensor(vector, dtype=th.float, device=self.device), self.parameters()
+        )
 
     def parameters_to_vector(self) -> np.ndarray:
         """
@@ -170,7 +201,9 @@ class HyBaseModel(nn.Module):
 
         :return:
         """
-        return th.nn.utils.parameters_to_vector(self.parameters()).detach().cpu().numpy()
+        return (
+            th.nn.utils.parameters_to_vector(self.parameters()).detach().cpu().numpy()
+        )
 
     def set_training_mode(self, mode: bool) -> None:
         """
@@ -182,7 +215,9 @@ class HyBaseModel(nn.Module):
         """
         self.train(mode)
 
-    def is_vectorized_observation(self, observation: Union[np.ndarray, Dict[str, np.ndarray]]) -> bool:
+    def is_vectorized_observation(
+        self, observation: Union[np.ndarray, Dict[str, np.ndarray]]
+    ) -> bool:
         """
         Check whether or not the observation is vectorized,
         apply transposition to image (so that they are channel-first) if needed.
@@ -195,14 +230,19 @@ class HyBaseModel(nn.Module):
         if isinstance(observation, dict):
             for key, obs in observation.items():
                 obs_space = self.observation_space.spaces[key]
-                vectorized_env = vectorized_env or is_vectorized_observation(maybe_transpose(obs, obs_space), obs_space)
+                vectorized_env = vectorized_env or is_vectorized_observation(
+                    maybe_transpose(obs, obs_space), obs_space
+                )
         else:
             vectorized_env = is_vectorized_observation(
-                maybe_transpose(observation, self.observation_space), self.observation_space
+                maybe_transpose(observation, self.observation_space),
+                self.observation_space,
             )
         return vectorized_env
 
-    def obs_to_tensor(self, observation: Union[np.ndarray, Dict[str, np.ndarray]]) -> Tuple[th.Tensor, bool]:
+    def obs_to_tensor(
+        self, observation: Union[np.ndarray, Dict[str, np.ndarray]]
+    ) -> Tuple[th.Tensor, bool]:
         vectorized_env = False
         if isinstance(observation, dict):
             # need to copy the dict as the dict in VecFrameStack will become a torch tensor
@@ -213,9 +253,13 @@ class HyBaseModel(nn.Module):
                     obs_ = maybe_transpose(obs, obs_space)
                 else:
                     obs_ = np.array(obs)
-                vectorized_env = vectorized_env or is_vectorized_observation(obs_, obs_space)
+                vectorized_env = vectorized_env or is_vectorized_observation(
+                    obs_, obs_space
+                )
                 # Add batch dimension if needed
-                observation[key] = obs_.reshape((-1, *self.observation_space[key].shape))
+                observation[key] = obs_.reshape(
+                    (-1, *self.observation_space[key].shape)
+                )
 
         elif is_image_space(self.observation_space):
             # Handle the different cases for images
@@ -227,20 +271,24 @@ class HyBaseModel(nn.Module):
 
         if not isinstance(observation, dict):
             # Dict obs need to be handled separately
-            vectorized_env = is_vectorized_observation(observation, self.observation_space)
+            vectorized_env = is_vectorized_observation(
+                observation, self.observation_space
+            )
             # Add batch dimension if needed
             observation = observation.reshape((-1, *self.observation_space.shape))
 
         observation = obs_as_tensor(observation, self.device)
         return observation, vectorized_env
 
+
 class HyBasePolicy(HyBaseModel, ABC):
     features_extractor: BaseFeaturesExtractor
+
     def __init__(self, *args, squash_output: bool = False, **kwargs):
         super().__init__(*args, **kwargs)
         self._squash_output = squash_output
-        self.action_space_disc:spaces.Dict = self.action_space['discrete_action']
-        self.action_space_con:spaces.Box = self.action_space['continuous_action']
+        self.action_space_disc: spaces.Dict = self.action_space["discrete_action"]
+        self.action_space_con: spaces.Box = self.action_space["continuous_action"]
 
     @staticmethod
     def _dummy_schedule(progress_remaining: float) -> float:
@@ -259,7 +307,9 @@ class HyBasePolicy(HyBaseModel, ABC):
                 module.bias.data.fill_(0.0)
 
     @abstractmethod
-    def _predict(self, observation: th.Tensor, deterministic: bool = False) -> th.Tensor:
+    def _predict(
+        self, observation: th.Tensor, deterministic: bool = False
+    ) -> th.Tensor:
         """"""
 
     def predict(
@@ -274,15 +324,23 @@ class HyBasePolicy(HyBaseModel, ABC):
         observation, vectorized_env = self.obs_to_tensor(observation)
 
         with th.no_grad():
-            actions_disc, actions_con = self._predict(observation, deterministic=deterministic)
-        actions_disc = actions_disc.cpu().numpy().reshape((-1, *self.action_space_disc.shape))
-        actions_con = actions_con.cpu().numpy().reshape((-1, *self.action_space_con.shape))
-        actions_con = np.clip(actions_con, self.action_space_con.low, self.action_space_con.high)
+            actions_disc, actions_con = self._predict(
+                observation, deterministic=deterministic
+            )
+        actions_disc = (
+            actions_disc.cpu().numpy().reshape((-1, *self.action_space_disc.shape))
+        )
+        actions_con = (
+            actions_con.cpu().numpy().reshape((-1, *self.action_space_con.shape))
+        )
+        actions_con = np.clip(
+            actions_con, self.action_space_con.low, self.action_space_con.high
+        )
         # Remove batch dimension if needed
         if not vectorized_env:
             actions_disc = actions_disc.squeeze(axis=0)
             actions_con = actions_con.squeeze(axis=0)
-        actions = np.concatenate([actions_disc[:,None],actions_con], axis=-1)
+        actions = np.concatenate([actions_disc[:, None], actions_con], axis=-1)
         return actions, state
 
     def scale_action(self, action: np.ndarray) -> np.ndarray:
@@ -294,9 +352,7 @@ class HyBasePolicy(HyBaseModel, ABC):
         return low + (0.5 * (scaled_action + 1.0) * (high - low))
 
 
-
 class HyActorCriticPolicy(HyBasePolicy):
-
     def __init__(
         self,
         observation_space: spaces.Space,
@@ -332,7 +388,11 @@ class HyActorCriticPolicy(HyBasePolicy):
             squash_output=squash_output,
             normalize_images=normalize_images,
         )
-        if isinstance(net_arch, list) and len(net_arch) > 0 and isinstance(net_arch[0], dict):
+        if (
+            isinstance(net_arch, list)
+            and len(net_arch) > 0
+            and isinstance(net_arch[0], dict)
+        ):
             warnings.warn(
                 (
                     "As shared layers in the mlp_extractor are removed since SB3 v1.8.0, "
@@ -374,8 +434,12 @@ class HyActorCriticPolicy(HyBasePolicy):
         self.use_sde = use_sde
         self.dist_kwargs = dist_kwargs
 
-        self.action_dist_disc = make_proba_distribution(self.action_space_disc, dist_kwargs=None)
-        self.action_dist_con = make_proba_distribution(self.action_space_con, use_sde=use_sde, dist_kwargs=dist_kwargs)
+        self.action_dist_disc = make_proba_distribution(
+            self.action_space_disc, dist_kwargs=None
+        )
+        self.action_dist_con = make_proba_distribution(
+            self.action_space_con, use_sde=use_sde, dist_kwargs=dist_kwargs
+        )
 
         self._build(lr_schedule)
 
@@ -415,7 +479,9 @@ class HyActorCriticPolicy(HyBasePolicy):
         self._build_mlp_extractor()
         latent_dim_pi = self.mlp_extractor.latent_dim_pi
 
-        self.action_net_disc = self.action_dist_disc.proba_distribution_net(latent_dim=latent_dim_pi)
+        self.action_net_disc = self.action_dist_disc.proba_distribution_net(
+            latent_dim=latent_dim_pi
+        )
         self.action_net_con, self.log_std = self.action_dist_con.proba_distribution_net(
             latent_dim=latent_dim_pi, log_std_init=self.log_std_init
         )
@@ -431,35 +497,47 @@ class HyActorCriticPolicy(HyBasePolicy):
             for module, gain in module_gains.items():
                 module.apply(partial(self.init_weights, gain=gain))
         value_parameters = [
-            self.value_net.parameters(), 
+            self.value_net.parameters(),
             self.mlp_extractor.value_net.parameters(),
-            self.features_extractor.parameters()
+            self.features_extractor.parameters(),
         ]
         self.value_parameters = [p for group in value_parameters for p in group]
 
         disc_parameters = [
             self.action_net_disc.parameters(),
-            self.mlp_extractor.policy_net_disc.parameters()
+            self.mlp_extractor.policy_net_disc.parameters(),
         ]
         self.disc_parameters = [p for group in disc_parameters for p in group]
-        
+
         con_parameters = [
             self.action_net_con.parameters(),
             [self.log_std],
-            self.mlp_extractor.policy_net_con.parameters()
+            self.mlp_extractor.policy_net_con.parameters(),
         ]
-        self.con_parameters = [p for group in con_parameters for p in (group if isinstance(group, list) else list(group))]
-        
-        self.value_optimizer = self.optimizer_class(self.value_parameters, lr=lr_schedule(1), **self.optimizer_kwargs)
-        self.disc_optimizer = self.optimizer_class(self.disc_parameters, lr=lr_schedule(1), **self.optimizer_kwargs)
-        self.con_optimizer = self.optimizer_class(self.con_parameters, lr=lr_schedule(1), **self.optimizer_kwargs)
+        self.con_parameters = [
+            p
+            for group in con_parameters
+            for p in (group if isinstance(group, list) else list(group))
+        ]
 
-    def forward(self, obs: th.Tensor, deterministic: bool = False) -> Tuple[th.Tensor, th.Tensor, th.Tensor, th.Tensor, th.Tensor]:
+        self.value_optimizer = self.optimizer_class(
+            self.value_parameters, lr=lr_schedule(1), **self.optimizer_kwargs
+        )
+        self.disc_optimizer = self.optimizer_class(
+            self.disc_parameters, lr=lr_schedule(1), **self.optimizer_kwargs
+        )
+        self.con_optimizer = self.optimizer_class(
+            self.con_parameters, lr=lr_schedule(1), **self.optimizer_kwargs
+        )
+
+    def forward(
+        self, obs: th.Tensor, deterministic: bool = False
+    ) -> Tuple[th.Tensor, th.Tensor, th.Tensor, th.Tensor, th.Tensor]:
         features = self.extract_features(obs)
-        
+
         latent_pi_disc, latent_pi_con, latent_vf = self.mlp_extractor(features)
         values = self.value_net(latent_vf)
-        
+
         distribution_disc = self._get_action_dist_from_latent_disc(latent_pi_disc)
         actions_disc = distribution_disc.get_actions(deterministic=deterministic)
         log_prob_disc = distribution_disc.log_prob(actions_disc)
@@ -472,7 +550,9 @@ class HyActorCriticPolicy(HyBasePolicy):
         actions_con = actions_con.reshape((-1, *self.action_space_con.shape))
         return actions_disc, actions_con, values, log_prob_disc, log_prob_con
 
-    def extract_features(self, obs: th.Tensor) -> Union[th.Tensor, Tuple[th.Tensor, th.Tensor]]:
+    def extract_features(
+        self, obs: th.Tensor
+    ) -> Union[th.Tensor, Tuple[th.Tensor, th.Tensor]]:
         return super().extract_features(obs, self.features_extractor)
 
     def _get_action_dist_from_latent_disc(self, latent_pi: th.Tensor) -> Distribution:
@@ -484,15 +564,25 @@ class HyActorCriticPolicy(HyBasePolicy):
         if isinstance(self.action_dist_con, DiagGaussianDistribution):
             return self.action_dist_con.proba_distribution(mean_actions, self.log_std)
         elif isinstance(self.action_dist_con, StateDependentNoiseDistribution):
-            return self.action_dist_con.proba_distribution(mean_actions, self.log_std, latent_pi)
+            return self.action_dist_con.proba_distribution(
+                mean_actions, self.log_std, latent_pi
+            )
         else:
             raise ValueError("Invalid action distribution")
 
-    def _predict(self, observation: th.Tensor, deterministic: bool = False) -> Tuple[th.Tensor,th.Tensor]:
+    def _predict(
+        self, observation: th.Tensor, deterministic: bool = False
+    ) -> Tuple[th.Tensor, th.Tensor]:
         distribution_disc, distribution_con = self.get_distribution(observation)
-        return distribution_disc.get_actions(deterministic=deterministic), distribution_con.get_actions(deterministic=deterministic)
+        return distribution_disc.get_actions(
+            deterministic=deterministic
+        ), distribution_con.get_actions(deterministic=deterministic)
 
-    def evaluate_actions(self, obs: th.Tensor, actions_disc: th.Tensor, actions_con:th.Tensor) -> Tuple[th.Tensor, th.Tensor, th.Tensor, Optional[th.Tensor], Optional[th.Tensor]]:
+    def evaluate_actions(
+        self, obs: th.Tensor, actions_disc: th.Tensor, actions_con: th.Tensor
+    ) -> Tuple[
+        th.Tensor, th.Tensor, th.Tensor, Optional[th.Tensor], Optional[th.Tensor]
+    ]:
         features = self.extract_features(obs)
         latent_vf = self.mlp_extractor.forward_critic(features)
         detached_f = features.detach()
@@ -507,24 +597,27 @@ class HyActorCriticPolicy(HyBasePolicy):
         values = self.value_net(latent_vf)
         return values, log_prob_disc, log_prob_con, entropy_disc, entropy_con
 
-    def get_distribution(self, obs: th.Tensor) -> Tuple[Distribution,Distribution]:
+    def get_distribution(self, obs: th.Tensor) -> Tuple[Distribution, Distribution]:
         features = super().extract_features(obs, self.pi_features_extractor)
         latent_pi_disc = self.mlp_extractor.forward_actor_disc(features)
         latent_pi_con = self.mlp_extractor.forward_actor_con(features)
-        return self._get_action_dist_from_latent_disc(latent_pi_disc), self._get_action_dist_from_latent_con(latent_pi_con)
+        return self._get_action_dist_from_latent_disc(
+            latent_pi_disc
+        ), self._get_action_dist_from_latent_con(latent_pi_con)
 
     def predict_values(self, obs: th.Tensor) -> th.Tensor:
         features = super().extract_features(obs, self.vf_features_extractor)
         latent_vf = self.mlp_extractor.forward_critic(features)
         return self.value_net(latent_vf)
 
-
     def reset_noise(self, n_envs: int = 1) -> None:
-        assert isinstance(self.action_dist_con, StateDependentNoiseDistribution), "reset_noise() is only available when using gSDE"
+        assert isinstance(self.action_dist_con, StateDependentNoiseDistribution), (
+            "reset_noise() is only available when using gSDE"
+        )
         self.action_dist_con.sample_weights(self.log_std, batch_size=n_envs)
 
-class HyActorCriticCnnPolicy(HyActorCriticPolicy):
 
+class HyActorCriticCnnPolicy(HyActorCriticPolicy):
     def __init__(
         self,
         observation_space: spaces.Space,
@@ -567,7 +660,6 @@ class HyActorCriticCnnPolicy(HyActorCriticPolicy):
 
 
 class HyMultiInputActorCriticPolicy(HyActorCriticPolicy):
-
     def __init__(
         self,
         observation_space: spaces.Space,
@@ -607,4 +699,3 @@ class HyMultiInputActorCriticPolicy(HyActorCriticPolicy):
             optimizer_class,
             optimizer_kwargs,
         )
-
