@@ -1,16 +1,16 @@
 [project]
 name = "sb3hppo"
-version = "0.1.1"
+version = "0.1.2"
 description = "Hybrid PPO implementation using stable-baselines3 and benchmarked in the Gymnasium-Hybrid standard environment."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "gymnasium-hybrid",
-    "numpy>=2.0",
-    "opencv-python>=4.11.0.86",
-    "stable-baselines3[extra]>=2.6.0",
-    "torch>=2.7.0",
-    "tyro>=0.9.20",
+    "numpy==2.2.5",
+    "opencv-python==4.11.0.86",
+    "stable-baselines3[extra]==2.6.0",
+    "torch==2.7.0",
+    "tyro==0.9.20",
 ]
 
 [[tool.uv.index]]
@@ -23,7 +23,7 @@ url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
 [tool.uv.sources]
-gymnasium-hybrid = { git = "https://github.com/Jordan-Haidee/gymnasium_hybrid.git" }
+gymnasium-hybrid = { git = "https://github.com/Jordan-Haidee/gymnasium_hybrid.git", rev = "fdd3b125" }
 torch = [{ index = "pytorch-cpu" }]
 
 [tool.ruff.lint]
