@@ -2,6 +2,17 @@
 
 > **Hybrid PPO** implementation using stable-baselines3 and benchmarked in the Gymnasium-Hybrid standard environment.
 
+<div style="display: flex; gap: 20px;">
+    <video width="48%" controls>
+        <source src="assets/Moving-v0-episode-0.mp4" type="video/mp4">
+        You browser can't play mp4 videos!
+    </video>
+    <video width="48%" controls>
+        <source src="assets/Sliding-v0-episode-0.mp4" type="video/mp4">
+        You browser can't play mp4 videos!
+    </video>
+</div>
+
 ## Usage
 ### 1. Clone this repo
 ```shell
