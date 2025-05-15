@@ -1,0 +1,7 @@
+{
+    "env": "HardMove-v0",
+    "n_envs": 8,
+    "seed": 2,
+    "save_path": "output/sb3hppo_HardMove-v0_20250515_152922",
+    "total_timesteps": 5000000
+}

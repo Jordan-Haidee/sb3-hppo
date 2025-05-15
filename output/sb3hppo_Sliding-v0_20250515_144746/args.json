@@ -1,0 +1,7 @@
+{
+    "env": "Sliding-v0",
+    "n_envs": 8,
+    "seed": 2,
+    "save_path": "output/sb3hppo_Sliding-v0_20250515_144746",
+    "total_timesteps": 5000000
+}

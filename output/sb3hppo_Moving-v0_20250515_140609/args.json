@@ -1,0 +1,7 @@
+{
+    "env": "Moving-v0",
+    "n_envs": 8,
+    "seed": 2,
+    "save_path": "output/sb3hppo_Moving-v0_20250515_140609",
+    "total_timesteps": 5000000
+}
