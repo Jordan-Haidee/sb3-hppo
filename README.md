@@ -2,9 +2,13 @@
 
 > **Hybrid PPO** implementation using stable-baselines3 and benchmarked in the Gymnasium-Hybrid standard environment.
 
+Test demo:
 |SB3-HPPO in Moving-v0 ⬇|SB3-HPPO in Sliding-v0 ⬇|
 |:--------------------:|:--------------------:|
 | ![Moving-v0](assets/Moving-v0.gif) | ![Sliding-v0](assets/Sliding-v0.gif) |
+
+Reward curve:
+![reward_curve](assets/reward_curve.png)
 
 ## Usage
 ### 1. Clone this repo
