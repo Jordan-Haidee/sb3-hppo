@@ -10,9 +10,9 @@ from wrapper import SB3HyPPOWrapper
 
 @dataclass
 class Args:
-    env: str # Env id from gymnasium_hybrid (Moving-v0 / Sliding-v0 / HardMove-v0)
-    ckpt: Path # Path to the checkpoint file (*.zip)
-    render: bool = False # Whether to render the environment
+    env: str  # Env id from gymnasium_hybrid (Moving-v0 / Sliding-v0 / HardMove-v0)
+    ckpt: Path  # Path to the checkpoint file (*.zip)
+    render: bool = False  # Whether to render the environment
 
 
 args = tyro.cli(Args)
@@ -26,6 +26,7 @@ s, _ = env.reset()
 while True:
     a, _ = algo.predict(s)
     s, r, t1, t2, _ = env.step(a)
-    env.render()
+    if args.render:
+        env.render()
     if t1 or t2:
         break
