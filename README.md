@@ -39,14 +39,16 @@ The trained policy and tensorboard log will be saved at `output/sb3hppo_xxx/mode
 
 ### 4. Test your policy
 ```
-$ python test.py --help
-usage: test.py [-h] --env STR --ckpt PATH [--render | --no-render]
+$ python .\test.py --help
+usage: test.py [-h] [OPTIONS]
 
 ╭─ options ──────────────────────────────────────────────────────────────────────────────────────────────╮
 │ -h, --help              show this help message and exit                                                │
 │ --env STR               Env id from gymnasium_hybrid (Moving-v0 / Sliding-v0 / HardMove-v0) (required) │
 │ --ckpt PATH             Path to the checkpoint file (*.zip) (required)                                 │
 │ --render, --no-render   Whether to render the environment (default: False)                             │
+│ --save-video {None}|PATH                                                                               │
+│                         Path to save the video (None to disable) (default: None)                       │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 Example:
