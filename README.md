@@ -5,7 +5,7 @@
 ## Usage
 ### 1. Clone this repo
 ```shell
-git clone ...
+git clone https://github.com/Jordan-Haidee/sb3-hppo.git
 cd path/to/sb3ppo
 ```
 
@@ -20,13 +20,15 @@ uv sync # recommended
 $ python train.py --help
 usage: train.py [-h] [OPTIONS]
 
-╭─ options ───────────────────────────────────────────────────────────╮
-│ -h, --help              show this help message and exit             │
-│ --env STR               (required)                                  │
-│ --save-path PATH        (default: sb3ppo_{%Y%m%d_%H%M%S})           │
-│ --n-envs INT            (default: 8)                                │
-│ --total-timesteps INT   (default: 10000000)                         │
-╰─────────────────────────────────────────────────────────────────────╯
+╭─ options ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ -h, --help              show this help message and exit                                                          │
+│ --env STR               env id from gymnasium_hybrid (Moving-v0 / Sliding-v0 / HardMove-v0) (default: Moving-v0) │
+│ --n-envs INT            number of parallel environments (default: 8)                                             │
+│ --seed INT              random seed (default: 42)                                                                │
+│ --save-path {None}|PATH                                                                                          │
+│                         path to save model and logs (default: None)                                              │
+│ --total-timesteps INT   total timesteps to train (default: 5000000)                                              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 Example:
 
@@ -40,16 +42,16 @@ The trained policy and tensorboard log will be saved at `output/sb3hppo_xxx/mode
 $ python test.py --help
 usage: test.py [-h] --env STR --ckpt PATH [--render | --no-render]
 
-╭─ options ───────────────────────────────────────────────╮
-│ -h, --help              show this help message and exit │
-│ --env STR               (required)                      │
-│ --ckpt PATH             (required)                      │
-│ --render, --no-render   (default: False)                │
-╰─────────────────────────────────────────────────────────╯
+╭─ options ──────────────────────────────────────────────────────────────────────────────────────────────╮
+│ -h, --help              show this help message and exit                                                │
+│ --env STR               Env id from gymnasium_hybrid (Moving-v0 / Sliding-v0 / HardMove-v0) (required) │
+│ --ckpt PATH             Path to the checkpoint file (*.zip) (required)                                 │
+│ --render, --no-render   Whether to render the environment (default: False)                             │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 Example:
 ```shell
-python test.py --env "Moving-v0" --ckpt output/sb3hppo_20250514_210451/model.zip --render
+python test.py --env "Moving-v0" --ckpt output/sb3hppo_Moving-v0_20250515_114301/model.zip --render
 ```
 ## Acknowledgement
 Thanks to [@wild-firefox](https://github.com/wild-firefox) and [@CAI23sbP](https://github.com/CAI23sbP) ! This repo heavily depends on their preceding works:
